@@ -1,0 +1,3 @@
+# github.com/joho/godotenv v1.3.1-0.20201111043658-f562099a4320
+## explicit
+github.com/joho/godotenv
