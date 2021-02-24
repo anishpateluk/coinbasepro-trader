@@ -1,12 +1,10 @@
-package coinbasepro
+package client
 
 import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"strconv"
-	"time"
 )
 
 func createSignature(secret, timestamp, httpMethod, requestPath, jsonBody string) (string, error) {
@@ -24,8 +22,4 @@ func createSignature(secret, timestamp, httpMethod, requestPath, jsonBody string
 
 	signature := base64.StdEncoding.EncodeToString(hash.Sum(nil))
 	return signature, nil
-}
-
-func createTimestamp() string {
-	return strconv.FormatInt(time.Now().Unix(), 10)
 }

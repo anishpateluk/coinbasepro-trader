@@ -1,10 +1,10 @@
-package coinbasepro
+package client
 
 import (
-	"testing"
+"testing"
 )
 
-func TestSigning(t *testing.T) {
+func TestCreateSignature(t *testing.T) {
 
 	const secret = "YmFzZTY0c2VjcmV0"
 	const timestamp = "1614191039"
