@@ -11,6 +11,11 @@ func createTimestamp() string {
 	return strconv.FormatInt(time.Now().Unix(), 10)
 }
 
+const CoinbaseProBaseurlKey = "COINBASE_PRO_BASEURL"
+const CoinbaseProKeyKey = "COINBASE_PRO_KEY"
+const CoinbaseProPassphraseKey = "COINBASE_PRO_PASSPHRASE"
+const CoinbaseProSecretKey = "COINBASE_PRO_SECRET"
+
 type Client struct {
 	baseUrl string
 	key string
@@ -18,33 +23,38 @@ type Client struct {
 	secret string
 }
 
-func New(params ...string) (*Client, error) {
-	baseUrl := os.Getenv("COINBASE_PRO_BASEURL")
-	key := os.Getenv("COINBASE_PRO_KEY")
-	passphrase := os.Getenv("COINBASE_PRO_PASSPHRASE")
-	secret := os.Getenv("COINBASE_PRO_SECRET")
+func New() (*Client, error) {
+	baseUrl := os.Getenv(CoinbaseProBaseurlKey)
+	key := os.Getenv(CoinbaseProKeyKey)
+	passphrase := os.Getenv(CoinbaseProPassphraseKey)
+	secret := os.Getenv(CoinbaseProSecretKey)
 
-	if baseUrl == "" && len(params) < 1 {
+	if baseUrl == "" {
 		return nil, errors.New("missing COINBASE_PRO_BASEURL")
 	}
 
-	if key == "" && len(params) < 2 {
+	if key == "" {
 		return nil, errors.New("missing COINBASE_PRO_KEY")
 	}
 
-	if passphrase == "" && len(params) < 3 {
+	if passphrase == "" {
 		return nil, errors.New("missing COINBASE_PRO_PASSPHRASE")
 	}
 
-	if secret == "" && len(params) < 4 {
+	if secret == "" {
 		return nil, errors.New("missing COINBASE_PRO_SECRET")
 	}
 
+	return NewWithOptions(baseUrl, key, passphrase, secret)
+}
 
-	//baseUrl := params[1:]
-	//fmt.Sprintf("baseUrl %s\n", baseUrl)
-
-	client := Client{}
+func NewWithOptions(baseUrl, key, passphrase, secret string) (*Client, error) {
+	client := Client{
+		baseUrl: baseUrl,
+		key: key,
+		passphrase: passphrase,
+		secret: secret,
+	}
 
 	return &client, nil
 }

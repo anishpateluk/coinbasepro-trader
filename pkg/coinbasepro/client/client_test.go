@@ -6,18 +6,22 @@ import (
 	"testing"
 )
 
+var clientOptionsMap = map[string]string {
+	CoinbaseProBaseurlKey:    "https://testbaseurl.com",
+	CoinbaseProKeyKey:        "testKey",
+	CoinbaseProPassphraseKey: "testPassphrase",
+	CoinbaseProSecretKey:     "testSecret",
+}
+
+func resetEnvVars() {
+	for key, value := range clientOptionsMap {
+		os.Setenv(key, value)
+	}
+}
 
 func TestNew(t *testing.T) {
-	const testBaseUrl = "https://testbaseurl.com"
-	const testKey = "testKey"
-	const testPassphrase = "testPassphrase"
-	const testSecret = "testSecret"
-
-	t.Run("does not error when all environment variables exists and no params supplied ", func(t *testing.T) {
-		os.Setenv("COINBASE_PRO_BASEURL", testBaseUrl)
-		os.Setenv("COINBASE_PRO_KEY", testKey)
-		os.Setenv("COINBASE_PRO_PASSPHRASE", testPassphrase)
-		os.Setenv("COINBASE_PRO_SECRET", testSecret)
+	t.Run("does not error when all environment variables exist", func(t *testing.T) {
+		resetEnvVars()
 
 		_, err := New()
 
@@ -26,21 +30,10 @@ func TestNew(t *testing.T) {
 		}
 	})
 
-	noParamsMissingEnvVarCases := []string {
-		"COINBASE_PRO_BASEURL",
-		"COINBASE_PRO_KEY",
-		"COINBASE_PRO_PASSPHRASE",
-		"COINBASE_PRO_SECRET",
-	}
-
-	for i :=0; i < len(noParamsMissingEnvVarCases); i++ {
-		envVar := noParamsMissingEnvVarCases[i]
-		testCase := fmt.Sprintf("errors when no params supplied and %s environment variable is missing", envVar)
+	for envVar, _ := range clientOptionsMap {
+		testCase := fmt.Sprintf("errors when %s environment variable is missing", envVar)
 		t.Run(testCase, func(t *testing.T) {
-			os.Setenv("COINBASE_PRO_BASEURL", testBaseUrl)
-			os.Setenv("COINBASE_PRO_KEY", testKey)
-			os.Setenv("COINBASE_PRO_PASSPHRASE", testPassphrase)
-			os.Setenv("COINBASE_PRO_SECRET", testSecret)
+			resetEnvVars()
 
 			os.Setenv(envVar, "")
 
@@ -51,4 +44,36 @@ func TestNew(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNewWithOptions(t *testing.T) {
+	t.Run("options should override environment variables", func(t *testing.T) {
+		resetEnvVars()
+
+		client, err := NewWithOptions("https://hello.com", "KlBsW", "Password1", "zzGfSK=")
+
+		if err != nil {
+			t.Error("unexpected error")
+		}
+
+		baseUrlEnvVar := clientOptionsMap[CoinbaseProBaseurlKey]
+		if client.baseUrl == baseUrlEnvVar {
+			t.Errorf("wanted %s got %s", client.baseUrl, baseUrlEnvVar)
+		}
+
+		keyEnvVar := clientOptionsMap[CoinbaseProKeyKey]
+		if client.key == keyEnvVar {
+			t.Errorf("wanted %s got %s", client.key, keyEnvVar)
+		}
+
+		passphraseEnvVar := clientOptionsMap[CoinbaseProPassphraseKey]
+		if client.passphrase == passphraseEnvVar {
+			t.Errorf("wanted %s got %s", client.passphrase, passphraseEnvVar)
+		}
+
+		secretEnvVar := clientOptionsMap[CoinbaseProSecretKey]
+		if client.secret == secretEnvVar {
+			t.Errorf("wanted %s got %s", client.secret, secretEnvVar)
+		}
+	})
 }
