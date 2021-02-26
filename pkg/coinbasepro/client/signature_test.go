@@ -1,7 +1,9 @@
 package client
 
 import (
-"testing"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
+	"testing"
 )
 
 func TestCreateSignature(t *testing.T) {
@@ -17,13 +19,8 @@ func TestCreateSignature(t *testing.T) {
 
 	t.Run("returns expected signature", func(t *testing.T) {
 		signature, err := createSignature(secret, timestamp, httpMethod, requestPath, jsonBody)
-		if err != nil {
-			t.Errorf("Error creating signature %s", err.Error())
-			return
-		}
+		assert.Assert(t, is.Nil(err), "unexpected error creating signature", err)
 
-		if signature != expectedSignature {
-			t.Errorf("wanted %s got %s", signature, expectedSignature)
-		}
+		assert.Equal(t, signature, expectedSignature)
 	})
 }
