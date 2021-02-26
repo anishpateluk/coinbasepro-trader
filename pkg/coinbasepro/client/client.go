@@ -1,7 +1,11 @@
 package client
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -15,6 +19,8 @@ const CoinbaseProBaseurlKey = "COINBASE_PRO_BASEURL"
 const CoinbaseProKeyKey = "COINBASE_PRO_KEY"
 const CoinbaseProPassphraseKey = "COINBASE_PRO_PASSPHRASE"
 const CoinbaseProSecretKey = "COINBASE_PRO_SECRET"
+
+var allowedHttpMethods = map[string]bool{ "GET":true, "POST":true, "DELETE":true }
 
 type Client struct {
 	baseUrl string
@@ -59,6 +65,33 @@ func NewWithOptions(baseUrl, key, passphrase, secret string) (*Client, error) {
 	return &client, nil
 }
 
-//func Request(httpMethod, requestPath, payload, )  {
-//
-//}
+func allowedHttpMethod(httpMethod string) bool {
+	_, found := allowedHttpMethods[httpMethod]
+	return found
+}
+
+func (t *Client) buildRequest(httpMethod, requestPath string, requestData interface{}) (*http.Request, error) {
+	if !allowedHttpMethod(httpMethod) {
+		return &http.Request{}, errors.New("supplied an unsupported or invalid http method")
+	}
+
+	fullUrl := fmt.Sprintf("%s%s", t.baseUrl, requestPath)
+	var requestBody = bytes.NewReader(make([]byte, 0))
+
+	if requestData != nil {
+		data, err := json.Marshal(requestData)
+		if err != nil {
+			return &http.Request{}, err
+		}
+
+		requestBody = bytes.NewReader(data)
+	}
+
+	req, err := http.NewRequest(httpMethod, fullUrl, requestBody)
+
+	if err != nil {
+		return &http.Request{}, err
+	}
+
+	return req, nil
+}
