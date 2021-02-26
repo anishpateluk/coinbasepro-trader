@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"testing"
 	"gotest.tools/v3/assert"
 	is "gotest.tools/v3/assert/cmp"
@@ -20,6 +21,11 @@ func resetEnvVars() {
 	for key, value := range clientOptionsMap {
 		os.Setenv(key, value)
 	}
+}
+
+func isStringNumeric(str string) bool {
+	_, err := strconv.ParseFloat(str, 64)
+	return err == nil
 }
 
 func TestNew(t *testing.T) {
@@ -114,7 +120,7 @@ func TestBuildRequest(t *testing.T) {
 		assert.DeepEqual(t, requestData, decodedRequestBody)
 	})
 
-	t.Run("use configured base url", func(t *testing.T) {
+	t.Run("should build request with configured base url and supplied path", func(t *testing.T) {
 		expectedUrl := "https://testbaseurl.com/test"
 
 		client, err := New()
@@ -125,5 +131,25 @@ func TestBuildRequest(t *testing.T) {
 
 		fullRequestUrl := fmt.Sprintf("%s://%s%s", req.URL.Scheme, req.URL.Host, req.URL.Path)
 		assert.Equal(t, fullRequestUrl, expectedUrl)
+	})
+
+	t.Run("should build request with configured CoinbasePro Access http headers", func(t *testing.T) {
+		expectedKeyHeader := clientOptionsMap[CoinbaseProKeyKey]
+		expectedPassphraseHeader := clientOptionsMap[CoinbaseProPassphraseKey]
+
+		client, err := New()
+		assert.Assert(t, is.Nil(err), "unexpected creating client using New", err)
+
+		req, err := client.buildRequest("GET", "/test", nil)
+		assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
+
+		keyHeader := req.Header.Get(CoinbaseProAccessKeyHeader)
+		signatureHeader := req.Header.Get(CoinbaseProAccessSignatureHeader)
+		timestampHeader := req.Header.Get(CoinbaseProAccessTimestampHeader)
+		passphraseHeader := req.Header.Get(CoinbaseProAccessPassphraseHeader)
+		assert.Equal(t, keyHeader, expectedKeyHeader)
+		assert.Assert(t, signatureHeader != "" && len(signatureHeader) > 10 && !isStringNumeric(signatureHeader), "signature header error", signatureHeader)
+		assert.Assert(t, timestampHeader != "" && len(timestampHeader) == 10 && isStringNumeric(timestampHeader), "timestamp header error", timestampHeader)
+		assert.Equal(t, passphraseHeader, expectedPassphraseHeader)
 	})
 }

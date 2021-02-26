@@ -20,6 +20,11 @@ const CoinbaseProKeyKey = "COINBASE_PRO_KEY"
 const CoinbaseProPassphraseKey = "COINBASE_PRO_PASSPHRASE"
 const CoinbaseProSecretKey = "COINBASE_PRO_SECRET"
 
+const CoinbaseProAccessKeyHeader = "CB-ACCESS-KEY"
+const CoinbaseProAccessSignatureHeader = "CB-ACCESS-SIGN"
+const CoinbaseProAccessTimestampHeader = "CB-ACCESS-TIMESTAMP"
+const CoinbaseProAccessPassphraseHeader = "CB-ACCESS-PASSPHRASE"
+
 const UnsupportedHttpMethodErrorMessage = "supplied an unsupported or invalid http method"
 
 var allowedHttpMethods = map[string]bool{ "GET":true, "POST":true, "DELETE":true }
@@ -72,28 +77,39 @@ func allowedHttpMethod(httpMethod string) bool {
 	return found
 }
 
-func (t *Client) buildRequest(httpMethod, requestPath string, requestData interface{}) (*http.Request, error) {
+func (t *Client) buildRequest(httpMethod, requestPath string, requestData interface{}) (req *http.Request, err error) {
 	if !allowedHttpMethod(httpMethod) {
 		return &http.Request{}, errors.New(UnsupportedHttpMethodErrorMessage)
 	}
 
 	fullUrl := fmt.Sprintf("%s%s", t.baseUrl, requestPath)
-	var requestBody = bytes.NewReader(make([]byte, 0))
+	var jsonBytes = make([]byte, 0)
+	var requestBody = bytes.NewReader(jsonBytes)
 
 	if requestData != nil {
-		data, err := json.Marshal(requestData)
+		jsonBytes, err = json.Marshal(requestData)
 		if err != nil {
 			return &http.Request{}, err
 		}
 
-		requestBody = bytes.NewReader(data)
+		requestBody = bytes.NewReader(jsonBytes)
 	}
 
-	req, err := http.NewRequest(httpMethod, fullUrl, requestBody)
-
+	req, err = http.NewRequest(httpMethod, fullUrl, requestBody)
 	if err != nil {
 		return &http.Request{}, err
 	}
+
+	timestamp := createTimestamp()
+	signature, err := createSignature(t.secret, timestamp, httpMethod, requestPath, string(jsonBytes))
+	if err != nil {
+		return &http.Request{}, err
+	}
+
+	req.Header.Add(CoinbaseProAccessKeyHeader, t.key)
+	req.Header.Add(CoinbaseProAccessPassphraseHeader, t.passphrase)
+	req.Header.Add(CoinbaseProAccessTimestampHeader, timestamp)
+	req.Header.Add(CoinbaseProAccessSignatureHeader, signature)
 
 	return req, nil
 }
