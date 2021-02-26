@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 )
 
 var clientOptionsMap = map[string]string {
@@ -26,9 +28,7 @@ func TestNew(t *testing.T) {
 
 		_, err := New()
 
-		if err != nil {
-			t.Error("errored when all environment variables have values", err)
-		}
+		assert.Assert(t, is.Nil(err), "errored when all environment variables have values", err)
 	})
 
 	for envVar, _ := range clientOptionsMap {
@@ -40,9 +40,7 @@ func TestNew(t *testing.T) {
 
 			_, err := New()
 
-			if err == nil {
-				t.Error("expected error, didn't get one")
-			}
+			assert.Error(t, err, fmt.Sprintf("missing %s", envVar))
 		})
 	}
 }
@@ -52,30 +50,19 @@ func TestNewWithOptions(t *testing.T) {
 		resetEnvVars()
 
 		client, err := NewWithOptions("https://hello.com", "KlBsW", "Password1", "zzGfSK=")
-
-		if err != nil {
-			t.Error("unexpected error", err)
-		}
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewWithOptions", err)
 
 		baseUrlEnvVar := clientOptionsMap[CoinbaseProBaseurlKey]
-		if client.baseUrl == baseUrlEnvVar {
-			t.Errorf("wanted %s got %s", client.baseUrl, baseUrlEnvVar)
-		}
+		assert.Assert(t, client.baseUrl != baseUrlEnvVar, fmt.Sprintf("wanted %s, got %s", client.baseUrl, baseUrlEnvVar))
 
 		keyEnvVar := clientOptionsMap[CoinbaseProKeyKey]
-		if client.key == keyEnvVar {
-			t.Errorf("wanted %s got %s", client.key, keyEnvVar)
-		}
+		assert.Assert(t, client.key != keyEnvVar, "wanted %s got %s", client.key, keyEnvVar)
 
 		passphraseEnvVar := clientOptionsMap[CoinbaseProPassphraseKey]
-		if client.passphrase == passphraseEnvVar {
-			t.Errorf("wanted %s got %s", client.passphrase, passphraseEnvVar)
-		}
+		assert.Assert(t, client.passphrase != passphraseEnvVar, "wanted %s got %s", client.passphrase, passphraseEnvVar)
 
 		secretEnvVar := clientOptionsMap[CoinbaseProSecretKey]
-		if client.secret == secretEnvVar {
-			t.Errorf("wanted %s got %s", client.secret, secretEnvVar)
-		}
+		assert.Assert(t, client.secret != secretEnvVar,"wanted %s got %s", client.secret, secretEnvVar)
 	})
 }
 
@@ -84,50 +71,30 @@ func TestBuildRequest(t *testing.T) {
 
 	t.Run("should error when unsupported httpMethod supplied", func(t *testing.T) {
 		client, err := New()
-
-		if err != nil {
-			t.Error("unexpected error", err)
-		}
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using New", err)
 
 		for _, unsupportedHttpMethod := range []string {"get", "post", "not a http method" } {
 			_, err = client.buildRequest(unsupportedHttpMethod, "/test", nil)
-
-			if err == nil {
-				t.Error("expected error when supplying an unsupported http method")
-			}
+			assert.Error(t, err, UnsupportedHttpMethodErrorMessage, err)
 		}
 
 		for _, allowedHttpMethod := range []string { "GET", "POST", "DELETE" } {
 			_, err = client.buildRequest(allowedHttpMethod, "/test", nil)
 
-			if err != nil {
-				t.Error("unexpected error when supplying supported http methods", err)
-			}
+			assert.Assert(t, is.Nil(err), "unexpected error when supplying supported http methods", err)
 		}
 	})
 
 	t.Run("should create expected request body", func(t *testing.T) {
 		client, err := New()
-
-		if err != nil {
-			t.Error("unexpected error", err)
-		}
+		assert.Assert(t, is.Nil(err), "unexpected creating client using New", err)
 
 		req, err := client.buildRequest("GET", "/test", nil)
-		if err != nil {
-			t.Error("unexpected error", err)
-		}
+		assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
 
-		var requestBody []byte
-		requestBodyCopyReader, err := req.GetBody()
-		if err != nil {
-			t.Error("unexpected error", err)
-		}
-
-		requestBodyLength, err := requestBodyCopyReader.Read(requestBody)
-		if err != nil && requestBodyLength != 0 {
-			t.Error("expected 0 length body and an EOF error which is valid for nil body content", err)
-		}
+		decoder := json.NewDecoder(req.Body)
+		err = decoder.Decode(nil)
+		assert.Error(t, err, "EOF", "expected EOF that represents an empty http request body", err)
 
 
 		type testStruct struct {
@@ -137,38 +104,26 @@ func TestBuildRequest(t *testing.T) {
 		requestData := testStruct{Foo: "bar"}
 
 		req, err = client.buildRequest("GET", "/test", requestData)
-		if err != nil {
-			t.Error("unexpected error", err)
-		}
+		assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
 
-		var requestBodyStruct = testStruct{}
-		decoder := json.NewDecoder(req.Body)
-		err = decoder.Decode(&requestBodyStruct)
-		if err != nil {
-			t.Error("unexpected error when decoding json", err)
-		}
+		var decodedRequestBody = testStruct{}
+		decoder = json.NewDecoder(req.Body)
+		err = decoder.Decode(&decodedRequestBody)
+		assert.Assert(t, is.Nil(err), "unexpected error decoding json", err)
 
-		if requestBodyStruct.Foo != requestData.Foo {
-			t.Errorf("wanted %v, got %v", requestData, requestBodyStruct)
-		}
+		assert.DeepEqual(t, requestData, decodedRequestBody)
 	})
 
 	t.Run("use configured base url", func(t *testing.T) {
 		expectedUrl := "https://testbaseurl.com/test"
 
 		client, err := New()
-		if err != nil {
-			t.Error("unexpected error", err)
-		}
+		assert.Assert(t, is.Nil(err), "unexpected creating client using New", err)
 
 		req, err := client.buildRequest("GET", "/test", nil)
-		if err != nil {
-			t.Error("unexpected error building request", err)
-		}
+		assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
 
 		fullRequestUrl := fmt.Sprintf("%s://%s%s", req.URL.Scheme, req.URL.Host, req.URL.Path)
-		if fullRequestUrl != expectedUrl {
-			t.Errorf("request built with unexpected url, wanted %s got %s", expectedUrl, fullRequestUrl)
-		}
+		assert.Equal(t, fullRequestUrl, expectedUrl)
 	})
 }

@@ -20,6 +20,8 @@ const CoinbaseProKeyKey = "COINBASE_PRO_KEY"
 const CoinbaseProPassphraseKey = "COINBASE_PRO_PASSPHRASE"
 const CoinbaseProSecretKey = "COINBASE_PRO_SECRET"
 
+const UnsupportedHttpMethodErrorMessage = "supplied an unsupported or invalid http method"
+
 var allowedHttpMethods = map[string]bool{ "GET":true, "POST":true, "DELETE":true }
 
 type Client struct {
@@ -72,7 +74,7 @@ func allowedHttpMethod(httpMethod string) bool {
 
 func (t *Client) buildRequest(httpMethod, requestPath string, requestData interface{}) (*http.Request, error) {
 	if !allowedHttpMethod(httpMethod) {
-		return &http.Request{}, errors.New("supplied an unsupported or invalid http method")
+		return &http.Request{}, errors.New(UnsupportedHttpMethodErrorMessage)
 	}
 
 	fullUrl := fmt.Sprintf("%s%s", t.baseUrl, requestPath)
