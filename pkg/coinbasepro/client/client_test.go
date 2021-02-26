@@ -14,7 +14,7 @@ var clientOptionsMap = map[string]string {
 	CoinbaseProBaseurlKey:    "https://testbaseurl.com",
 	CoinbaseProKeyKey:        "testKey",
 	CoinbaseProPassphraseKey: "testPassphrase",
-	CoinbaseProSecretKey:     "testSecret",
+	CoinbaseProSecretKey:     "YmFzZTY0c2VjcmV0",
 }
 
 func resetEnvVars() {
