@@ -180,6 +180,19 @@ func TestBuildRequest(t *testing.T) {
 		assert.Assert(t, timestampHeader != "" && len(timestampHeader) == 10 && isStringNumeric(timestampHeader), "timestamp header error", timestampHeader)
 		assert.Equal(t, passphraseHeader, expectedPassphraseHeader)
 	})
+
+	t.Run("should build request with correct accept and content type headers", func(t *testing.T) {
+		client, err := New()
+		assert.Assert(t, is.Nil(err), "unexpected creating client using New", err)
+
+		req, err := client.buildRequest("GET", "/test", nil)
+		assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
+
+		acceptsHeader := req.Header.Get(AcceptHeaderKey)
+		contentTypeHeader := req.Header.Get(ContentTypeHeaderKey)
+		assert.Equal(t, acceptsHeader, AcceptHeaderValue)
+		assert.Equal(t, contentTypeHeader, ContentTypeHeaderValue)
+	})
 }
 
 func TestMakeRequest(t *testing.T) {

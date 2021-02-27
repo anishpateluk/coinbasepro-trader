@@ -25,6 +25,11 @@ const CoinbaseProAccessSignatureHeader = "CB-ACCESS-SIGN"
 const CoinbaseProAccessTimestampHeader = "CB-ACCESS-TIMESTAMP"
 const CoinbaseProAccessPassphraseHeader = "CB-ACCESS-PASSPHRASE"
 
+const AcceptHeaderKey = "Accept"
+const AcceptHeaderValue = "application/json"
+const ContentTypeHeaderKey = "Content-Type"
+const ContentTypeHeaderValue = "Content-Type"
+
 const UnsupportedHttpMethodErrorMessage = "supplied an unsupported or invalid http method"
 
 var allowedHttpMethods = map[string]bool{ "GET":true, "POST":true, "DELETE":true }
@@ -114,6 +119,9 @@ func (t *Client) buildRequest(httpMethod, requestPath string, requestData interf
 	req.Header.Add(CoinbaseProAccessPassphraseHeader, t.passphrase)
 	req.Header.Add(CoinbaseProAccessTimestampHeader, timestamp)
 	req.Header.Add(CoinbaseProAccessSignatureHeader, signature)
+
+	req.Header.Add(ContentTypeHeaderKey, ContentTypeHeaderValue)
+	req.Header.Add(AcceptHeaderKey, AcceptHeaderValue)
 
 	return req, nil
 }
