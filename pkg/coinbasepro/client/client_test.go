@@ -198,21 +198,24 @@ func TestBuildRequest(t *testing.T) {
 func TestMakeRequest(t *testing.T) {
 	resetEnvVars()
 
-	t.Run("should make request", func(t *testing.T) {
-		ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			writer.WriteHeader(http.StatusOK)
-		}))
-		defer ts.Close()
+	for _, httpStatus := range []int {http.StatusOK, http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound, http.StatusInternalServerError} {
+		testCase := fmt.Sprintf("should return %v http response", httpStatus)
+		t.Run(testCase, func(t *testing.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				writer.WriteHeader(httpStatus)
+			}))
+			defer ts.Close()
 
-		client, err := NewWithOptions(ts.URL, testKey, testPassphrase, testSecret)
-		assert.Assert(t, is.Nil(err), "unexpected creating client using NewWithOptions", err)
+			client, err := NewWithOptions(ts.URL, testKey, testPassphrase, testSecret)
+			assert.Assert(t, is.Nil(err), "unexpected creating client using NewWithOptions", err)
 
-		req, err := client.buildRequest("GET", "/test", nil)
-		assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
+			req, err := client.buildRequest("GET", "/test", nil)
+			assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
 
-		res, err := client.makeRequest(req)
-		assert.Assert(t, is.Nil(err), "unexpected error from client.makeRequest", err)
+			res, err := client.makeRequest(req)
+			assert.Assert(t, is.Nil(err), "unexpected error from client.makeRequest", err)
 
-		assert.Equal(t, res.StatusCode, 200)
-	})
+			assert.Equal(t, res.StatusCode, httpStatus)
+		})
+	}
 }
