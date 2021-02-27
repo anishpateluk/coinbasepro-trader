@@ -212,10 +212,31 @@ func TestMakeRequest(t *testing.T) {
 			req, err := client.buildRequest("GET", "/test", nil)
 			assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
 
-			res, err := client.makeRequest(req)
+			res, err := client.makeRequest(req, 0)
 			assert.Assert(t, is.Nil(err), "unexpected error from client.makeRequest", err)
 
 			assert.Equal(t, res.StatusCode, httpStatus)
 		})
 	}
+
+	t.Run("should retry specified number of times when rate limited by 429", func(t *testing.T) {
+		requests := 0
+		maxRetriesOn429 := 3
+		ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			requests += 1
+			writer.WriteHeader(http.StatusTooManyRequests)
+		}))
+		defer ts.Close()
+
+		client, err := NewWithOptions(ts.URL, testKey, testPassphrase, testSecret)
+		assert.Assert(t, is.Nil(err), "unexpected creating client using NewWithOptions", err)
+
+		req, err := client.buildRequest("GET", "/test", nil)
+		assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
+
+		_, err = client.makeRequest(req, maxRetriesOn429)
+		assert.Assert(t, is.Nil(err), "unexpected error from client.makeRequest", err)
+
+		assert.Equal(t, requests, maxRetriesOn429)
+	})
 }

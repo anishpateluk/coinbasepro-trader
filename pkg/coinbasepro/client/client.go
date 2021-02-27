@@ -32,6 +32,8 @@ const ContentTypeHeaderValue = "Content-Type"
 
 const UnsupportedHttpMethodErrorMessage = "supplied an unsupported or invalid http method"
 
+const WaitTimeOn429 = 300 * time.Millisecond
+
 var allowedHttpMethods = map[string]bool{ "GET":true, "POST":true, "DELETE":true }
 
 type Client struct {
@@ -126,7 +128,24 @@ func (t *Client) buildRequest(httpMethod, requestPath string, requestData interf
 	return req, nil
 }
 
-func (t *Client) makeRequest(req *http.Request) (*http.Response, error) {
-	res, err := t.httpClient.Do(req)
+func (t *Client) makeRequest(req *http.Request, maxRetriesOn429 int) (res *http.Response, err error) {
+	if maxRetriesOn429 < 1 {
+		maxRetriesOn429 = 1
+	}
+
+	for tries := 0; tries < maxRetriesOn429; tries++ {
+		res, err = t.httpClient.Do(req)
+		if err != nil {
+			break
+		}
+
+		if res.StatusCode == http.StatusTooManyRequests {
+			time.Sleep(WaitTimeOn429)
+			continue
+		}
+
+		break
+	}
+
 	return res, err
 }
