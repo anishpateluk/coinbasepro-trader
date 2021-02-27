@@ -199,7 +199,6 @@ func TestMakeRequest(t *testing.T) {
 	resetEnvVars()
 
 	t.Run("should make request", func(t *testing.T) {
-		requestPath := "/test"
 		ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 			writer.WriteHeader(http.StatusOK)
 		}))
@@ -208,7 +207,7 @@ func TestMakeRequest(t *testing.T) {
 		client, err := NewWithOptions(ts.URL, testKey, testPassphrase, testSecret)
 		assert.Assert(t, is.Nil(err), "unexpected creating client using NewWithOptions", err)
 
-		req, err := client.buildRequest("GET", requestPath, nil)
+		req, err := client.buildRequest("GET", "/test", nil)
 		assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
 
 		res, err := client.makeRequest(req)
