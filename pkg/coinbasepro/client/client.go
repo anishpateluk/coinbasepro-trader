@@ -34,6 +34,7 @@ type Client struct {
 	key string
 	passphrase string
 	secret string
+	httpClient *http.Client
 }
 
 func New() (*Client, error) {
@@ -67,6 +68,9 @@ func NewWithOptions(baseUrl, key, passphrase, secret string) (*Client, error) {
 		key: key,
 		passphrase: passphrase,
 		secret: secret,
+		httpClient: &http.Client{
+			Timeout: 10 * time.Second,
+		},
 	}
 
 	return &client, nil
@@ -112,4 +116,9 @@ func (t *Client) buildRequest(httpMethod, requestPath string, requestData interf
 	req.Header.Add(CoinbaseProAccessSignatureHeader, signature)
 
 	return req, nil
+}
+
+func (t *Client) makeRequest(req *http.Request) (*http.Response, error) {
+	res, err := t.httpClient.Do(req)
+	return res, err
 }
