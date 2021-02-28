@@ -176,3 +176,22 @@ func (t *Client) parseJsonResponse(res *http.Response, result interface{}) (inte
 
 	return result, nil
 }
+
+func (t *Client) executeRequest(httpMethod, requestPath string, requestBody interface{}, responseBody interface{}, maxRetiresOn429 int) (interface{}, error) {
+	req, err := t.buildRequest(httpMethod, requestPath, requestBody)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := t.sendRequest(req, maxRetiresOn429)
+	if err != nil {
+		return nil, err
+	}
+
+	parsedResponse, err := t.parseJsonResponse(res, responseBody)
+	if err != nil {
+		return nil, err
+	}
+
+	return parsedResponse, nil
+}

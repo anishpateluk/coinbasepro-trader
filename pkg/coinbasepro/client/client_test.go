@@ -306,3 +306,103 @@ func TestParseResponse(t *testing.T) {
 		})
 	}
 }
+
+func TestExecuteRequest(t *testing.T) {
+	resetEnvVars()
+
+	t.Run("when expecting an empty response body, should execute request successfully", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			writer.WriteHeader(http.StatusOK)
+		}))
+		defer ts.Close()
+
+		client, err := NewWithOptions(ts.URL, testKey, testPassphrase, testSecret)
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewWithOptions", err)
+
+		res, err := client.executeRequest("GET", "/test", nil, nil, 0)
+		assert.Assert(t, is.Nil(err), "unexpected error from client.executeRequest", err)
+
+		assert.Equal(t, res, nil)
+	})
+
+	t.Run("when expecting a response body, should execute request successfully", func(t *testing.T) {
+		type testResponseBody struct {
+			Foo string `json:"foo"`
+		}
+
+		serverResponseBody := testResponseBody{Foo: "bar"}
+
+		ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			responseBodyBytes, err := json.Marshal(serverResponseBody)
+			assert.Assert(t, is.Nil(err), "unexpected error marshaling serverResponseBody", err)
+
+			writer.WriteHeader(http.StatusOK)
+			writer.Header().Add(ContentTypeHeaderKey, ContentTypeHeaderValue)
+			writer.Write(responseBodyBytes)
+		}))
+		defer ts.Close()
+
+		client, err := NewWithOptions(ts.URL, testKey, testPassphrase, testSecret)
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewWithOptions", err)
+
+		clientResponseBody := testResponseBody{}
+		res, err := client.executeRequest("GET", "/test", nil, &clientResponseBody, 0)
+		assert.Assert(t, is.Nil(err), "unexpected error from client.executeRequest", err)
+
+		assert.DeepEqual(t, res, &serverResponseBody)
+	})
+
+	t.Run("when sending a request body, should execute request successfully", func(t *testing.T) {
+		type testRequestBody struct {
+			Foo string `json:"foo"`
+		}
+
+		clientRequestBody := testRequestBody{Foo: "bar"}
+
+		ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			defer request.Body.Close()
+			serverRequestBody := testRequestBody{}
+			decoder := json.NewDecoder(request.Body)
+			err := decoder.Decode(&serverRequestBody)
+			assert.Assert(t, is.Nil(err), "unexpected error decoding clientRequestBody", err)
+
+			assert.DeepEqual(t, clientRequestBody, serverRequestBody)
+
+			writer.WriteHeader(http.StatusOK)
+		}))
+		defer ts.Close()
+
+		client, err := NewWithOptions(ts.URL, testKey, testPassphrase, testSecret)
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewWithOptions", err)
+
+		res, err := client.executeRequest("GET", "/test", clientRequestBody, nil, 0)
+		assert.Assert(t, is.Nil(err), "unexpected error from client.executeRequest", err)
+
+		assert.DeepEqual(t, res, nil)
+	})
+
+	t.Run("should surface api error messages", func(t *testing.T) {
+		serverResponseBody := ApiError{
+			StatusCode: http.StatusTooManyRequests,
+			Message: "Too Many Requests",
+		}
+
+		ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			responseBodyBytes, err := json.Marshal(serverResponseBody)
+			assert.Assert(t, is.Nil(err), "unexpected error marshaling serverResponseBody", err)
+
+			writer.WriteHeader(http.StatusTooManyRequests)
+			writer.Header().Add(ContentTypeHeaderKey, ContentTypeHeaderValue)
+			writer.Write(responseBodyBytes)
+		}))
+		defer ts.Close()
+
+		client, err := NewWithOptions(ts.URL, testKey, testPassphrase, testSecret)
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewWithOptions", err)
+
+		res, err := client.executeRequest("GET", "/test", nil, nil, 0)
+		assert.DeepEqual(t, res, nil)
+
+		assert.Error(t, err, fmt.Sprintf("%d - %s", serverResponseBody.StatusCode, serverResponseBody.Message))
+	})
+}
