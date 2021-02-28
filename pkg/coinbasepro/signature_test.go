@@ -1,4 +1,4 @@
-package client
+package coinbasepro
 
 import (
 	"gotest.tools/v3/assert"
