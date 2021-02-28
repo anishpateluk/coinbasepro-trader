@@ -214,8 +214,8 @@ func TestMakeRequest(t *testing.T) {
 			req, err := client.buildRequest("GET", "/test", nil)
 			assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
 
-			res, err := client.makeRequest(req, 0)
-			assert.Assert(t, is.Nil(err), "unexpected error from client.makeRequest", err)
+			res, err := client.sendRequest(req, 0)
+			assert.Assert(t, is.Nil(err), "unexpected error from client.sendRequest", err)
 
 			assert.Equal(t, res.StatusCode, httpStatus)
 		})
@@ -236,8 +236,8 @@ func TestMakeRequest(t *testing.T) {
 		req, err := client.buildRequest("GET", "/test", nil)
 		assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
 
-		_, err = client.makeRequest(req, maxRetriesOn429)
-		assert.Assert(t, is.Nil(err), "unexpected error from client.makeRequest", err)
+		_, err = client.sendRequest(req, maxRetriesOn429)
+		assert.Assert(t, is.Nil(err), "unexpected error from client.sendRequest", err)
 
 		assert.Equal(t, requests, maxRetriesOn429)
 	})

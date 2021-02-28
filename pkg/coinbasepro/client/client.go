@@ -128,7 +128,7 @@ func (t *Client) buildRequest(httpMethod, requestPath string, requestData interf
 	return req, nil
 }
 
-func (t *Client) makeRequest(req *http.Request, maxRetriesOn429 int) (res *http.Response, err error) {
+func (t *Client) sendRequest(req *http.Request, maxRetriesOn429 int) (res *http.Response, err error) {
 	if maxRetriesOn429 < 1 {
 		maxRetriesOn429 = 1
 	}
