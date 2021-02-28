@@ -21,10 +21,10 @@ const testPassphrase = "testPassphrase"
 const testSecret = "YmFzZTY0c2VjcmV0"
 
 var clientOptionsMap = map[string]string {
-	CoinbaseProBaseurlKey:    testBaseUrl,
-	CoinbaseProKeyKey:        testKey,
-	CoinbaseProPassphraseKey: testPassphrase,
-	CoinbaseProSecretKey:     testSecret,
+	coinbaseProBaseurlKey:    testBaseUrl,
+	coinbaseProKeyKey:        testKey,
+	coinbaseProPassphraseKey: testPassphrase,
+	coinbaseProSecretKey:     testSecret,
 }
 
 func resetEnvVars() {
@@ -42,7 +42,7 @@ func TestNew(t *testing.T) {
 	t.Run("does not error when all environment variables exist", func(t *testing.T) {
 		resetEnvVars()
 
-		_, err := New()
+		_, err := NewClient()
 
 		assert.Assert(t, is.Nil(err), "errored when all environment variables have values", err)
 	})
@@ -54,7 +54,7 @@ func TestNew(t *testing.T) {
 
 			os.Setenv(envVar, "")
 
-			_, err := New()
+			_, err := NewClient()
 
 			assert.Error(t, err, fmt.Sprintf("missing %s", envVar))
 		})
@@ -63,8 +63,8 @@ func TestNew(t *testing.T) {
 	t.Run("should initialise http.Client", func(t *testing.T) {
 		resetEnvVars()
 
-		client, err := New()
-		assert.Assert(t, is.Nil(err), "unexpected error creating client using New", err)
+		client, err := NewClient()
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewClient", err)
 
 		assert.Assert(t, client.httpClient != nil)
 		assert.Equal(t, client.httpClient.Timeout, 10 * time.Second)
@@ -75,27 +75,27 @@ func TestNewWithOptions(t *testing.T) {
 	t.Run("options should override environment variables", func(t *testing.T) {
 		resetEnvVars()
 
-		client, err := NewWithOptions("https://hello.com", "KlBsW", "Password1", "zzGfSK=")
-		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewWithOptions", err)
+		client, err := NewClientWithOptions("https://hello.com", "KlBsW", "Password1", "zzGfSK=")
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewClientWithOptions", err)
 
-		baseUrlEnvVar := clientOptionsMap[CoinbaseProBaseurlKey]
+		baseUrlEnvVar := clientOptionsMap[coinbaseProBaseurlKey]
 		assert.Assert(t, client.baseUrl != baseUrlEnvVar, fmt.Sprintf("wanted %s, got %s", client.baseUrl, baseUrlEnvVar))
 
-		keyEnvVar := clientOptionsMap[CoinbaseProKeyKey]
+		keyEnvVar := clientOptionsMap[coinbaseProKeyKey]
 		assert.Assert(t, client.key != keyEnvVar, "wanted %s got %s", client.key, keyEnvVar)
 
-		passphraseEnvVar := clientOptionsMap[CoinbaseProPassphraseKey]
+		passphraseEnvVar := clientOptionsMap[coinbaseProPassphraseKey]
 		assert.Assert(t, client.passphrase != passphraseEnvVar, "wanted %s got %s", client.passphrase, passphraseEnvVar)
 
-		secretEnvVar := clientOptionsMap[CoinbaseProSecretKey]
+		secretEnvVar := clientOptionsMap[coinbaseProSecretKey]
 		assert.Assert(t, client.secret != secretEnvVar,"wanted %s got %s", client.secret, secretEnvVar)
 	})
 
 	t.Run("should initialise http.Client", func(t *testing.T) {
 		resetEnvVars()
 
-		client, err := NewWithOptions("https://hello.com", "KlBsW", "Password1", "zzGfSK=")
-		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewWithOptions", err)
+		client, err := NewClientWithOptions("https://hello.com", "KlBsW", "Password1", "zzGfSK=")
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewClientWithOptions", err)
 
 		assert.Assert(t, client.httpClient != nil)
 		assert.Equal(t, client.httpClient.Timeout, 10 * time.Second)
@@ -106,8 +106,8 @@ func TestBuildRequest(t *testing.T) {
 	resetEnvVars()
 
 	t.Run("should error when unsupported httpMethod supplied", func(t *testing.T) {
-		client, err := New()
-		assert.Assert(t, is.Nil(err), "unexpected error creating client using New", err)
+		client, err := NewClient()
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewClient", err)
 
 		for _, unsupportedHttpMethod := range []string {"get", "post", "not a http method" } {
 			_, err = client.buildRequest(unsupportedHttpMethod, "/test", nil)
@@ -122,8 +122,8 @@ func TestBuildRequest(t *testing.T) {
 	})
 
 	t.Run("should create expected request body", func(t *testing.T) {
-		client, err := New()
-		assert.Assert(t, is.Nil(err), "unexpected error creating client using New", err)
+		client, err := NewClient()
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewClient", err)
 
 		req, err := client.buildRequest("GET", "/test", nil)
 		assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
@@ -153,8 +153,8 @@ func TestBuildRequest(t *testing.T) {
 	t.Run("should build request with configured base url and supplied path", func(t *testing.T) {
 		expectedUrl := "https://testbaseurl.com/test"
 
-		client, err := New()
-		assert.Assert(t, is.Nil(err), "unexpected error creating client using New", err)
+		client, err := NewClient()
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewClient", err)
 
 		req, err := client.buildRequest("GET", "/test", nil)
 		assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
@@ -164,19 +164,19 @@ func TestBuildRequest(t *testing.T) {
 	})
 
 	t.Run("should build request with configured CoinbasePro Access http headers", func(t *testing.T) {
-		expectedKeyHeader := clientOptionsMap[CoinbaseProKeyKey]
-		expectedPassphraseHeader := clientOptionsMap[CoinbaseProPassphraseKey]
+		expectedKeyHeader := clientOptionsMap[coinbaseProKeyKey]
+		expectedPassphraseHeader := clientOptionsMap[coinbaseProPassphraseKey]
 
-		client, err := New()
-		assert.Assert(t, is.Nil(err), "unexpected error creating client using New", err)
+		client, err := NewClient()
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewClient", err)
 
 		req, err := client.buildRequest("GET", "/test", nil)
 		assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
 
-		keyHeader := req.Header.Get(CoinbaseProAccessKeyHeader)
-		signatureHeader := req.Header.Get(CoinbaseProAccessSignatureHeader)
-		timestampHeader := req.Header.Get(CoinbaseProAccessTimestampHeader)
-		passphraseHeader := req.Header.Get(CoinbaseProAccessPassphraseHeader)
+		keyHeader := req.Header.Get(coinbaseProAccessKeyHeader)
+		signatureHeader := req.Header.Get(coinbaseProAccessSignatureHeader)
+		timestampHeader := req.Header.Get(coinbaseProAccessTimestampHeader)
+		passphraseHeader := req.Header.Get(coinbaseProAccessPassphraseHeader)
 		assert.Equal(t, keyHeader, expectedKeyHeader)
 		assert.Assert(t, signatureHeader != "" && len(signatureHeader) > 10 && !isStringNumeric(signatureHeader), "signature header error", signatureHeader)
 		assert.Assert(t, timestampHeader != "" && len(timestampHeader) == 10 && isStringNumeric(timestampHeader), "timestamp header error", timestampHeader)
@@ -184,16 +184,16 @@ func TestBuildRequest(t *testing.T) {
 	})
 
 	t.Run("should build request with correct accept and content type headers", func(t *testing.T) {
-		client, err := New()
-		assert.Assert(t, is.Nil(err), "unexpected error creating client using New", err)
+		client, err := NewClient()
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewClient", err)
 
 		req, err := client.buildRequest("GET", "/test", nil)
 		assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
 
-		acceptsHeader := req.Header.Get(AcceptHeaderKey)
-		contentTypeHeader := req.Header.Get(ContentTypeHeaderKey)
-		assert.Equal(t, acceptsHeader, AcceptHeaderValue)
-		assert.Equal(t, contentTypeHeader, ContentTypeHeaderValue)
+		acceptsHeader := req.Header.Get(acceptHeaderKey)
+		contentTypeHeader := req.Header.Get(contentTypeHeaderKey)
+		assert.Equal(t, acceptsHeader, acceptHeaderValue)
+		assert.Equal(t, contentTypeHeader, contentTypeHeaderValue)
 	})
 }
 
@@ -208,8 +208,8 @@ func TestMakeRequest(t *testing.T) {
 			}))
 			defer ts.Close()
 
-			client, err := NewWithOptions(ts.URL, testKey, testPassphrase, testSecret)
-			assert.Assert(t, is.Nil(err), "unexpected error creating client using NewWithOptions", err)
+			client, err := NewClientWithOptions(ts.URL, testKey, testPassphrase, testSecret)
+			assert.Assert(t, is.Nil(err), "unexpected error creating client using NewClientWithOptions", err)
 
 			req, err := client.buildRequest("GET", "/test", nil)
 			assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
@@ -230,8 +230,8 @@ func TestMakeRequest(t *testing.T) {
 		}))
 		defer ts.Close()
 
-		client, err := NewWithOptions(ts.URL, testKey, testPassphrase, testSecret)
-		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewWithOptions", err)
+		client, err := NewClientWithOptions(ts.URL, testKey, testPassphrase, testSecret)
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewClientWithOptions", err)
 
 		req, err := client.buildRequest("GET", "/test", nil)
 		assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
@@ -247,8 +247,8 @@ func TestParseResponse(t *testing.T) {
 	resetEnvVars()
 
 	t.Run("should return nil, nil when no body in Ok http response", func(t *testing.T) {
-		client, err := New()
-		assert.Assert(t, is.Nil(err), "unexpected error creating client using New", err)
+		client, err := NewClient()
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewClient", err)
 
 		res := http.Response{
 			StatusCode: http.StatusOK,
@@ -262,8 +262,8 @@ func TestParseResponse(t *testing.T) {
 	})
 
 	t.Run("should return parsed response body from Ok http response", func(t *testing.T) {
-		client, err := New()
-		assert.Assert(t, is.Nil(err), "unexpected error creating client using New", err)
+		client, err := NewClient()
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewClient", err)
 
 		type testResult struct {
 			Foo string `json:"foo"`
@@ -289,8 +289,8 @@ func TestParseResponse(t *testing.T) {
 		t.Run(testCase, func(t *testing.T) {
 			apiErrorMessage := "i am an error message"
 
-			client, err := New()
-			assert.Assert(t, is.Nil(err), "unexpected error creating client using New", err)
+			client, err := NewClient()
+			assert.Assert(t, is.Nil(err), "unexpected error creating client using NewClient", err)
 
 			body := fmt.Sprintf("{\"message\":\"%s\"}", apiErrorMessage)
 			res := http.Response{
@@ -316,8 +316,8 @@ func TestExecuteRequest(t *testing.T) {
 		}))
 		defer ts.Close()
 
-		client, err := NewWithOptions(ts.URL, testKey, testPassphrase, testSecret)
-		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewWithOptions", err)
+		client, err := NewClientWithOptions(ts.URL, testKey, testPassphrase, testSecret)
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewClientWithOptions", err)
 
 		res, err := client.executeRequest("GET", "/test", nil, nil, 0)
 		assert.Assert(t, is.Nil(err), "unexpected error from client.executeRequest", err)
@@ -337,13 +337,13 @@ func TestExecuteRequest(t *testing.T) {
 			assert.Assert(t, is.Nil(err), "unexpected error marshaling serverResponseBody", err)
 
 			writer.WriteHeader(http.StatusOK)
-			writer.Header().Add(ContentTypeHeaderKey, ContentTypeHeaderValue)
+			writer.Header().Add(contentTypeHeaderKey, contentTypeHeaderValue)
 			writer.Write(responseBodyBytes)
 		}))
 		defer ts.Close()
 
-		client, err := NewWithOptions(ts.URL, testKey, testPassphrase, testSecret)
-		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewWithOptions", err)
+		client, err := NewClientWithOptions(ts.URL, testKey, testPassphrase, testSecret)
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewClientWithOptions", err)
 
 		clientResponseBody := testResponseBody{}
 		res, err := client.executeRequest("GET", "/test", nil, &clientResponseBody, 0)
@@ -372,8 +372,8 @@ func TestExecuteRequest(t *testing.T) {
 		}))
 		defer ts.Close()
 
-		client, err := NewWithOptions(ts.URL, testKey, testPassphrase, testSecret)
-		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewWithOptions", err)
+		client, err := NewClientWithOptions(ts.URL, testKey, testPassphrase, testSecret)
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewClientWithOptions", err)
 
 		res, err := client.executeRequest("GET", "/test", clientRequestBody, nil, 0)
 		assert.Assert(t, is.Nil(err), "unexpected error from client.executeRequest", err)
@@ -392,13 +392,13 @@ func TestExecuteRequest(t *testing.T) {
 			assert.Assert(t, is.Nil(err), "unexpected error marshaling serverResponseBody", err)
 
 			writer.WriteHeader(http.StatusTooManyRequests)
-			writer.Header().Add(ContentTypeHeaderKey, ContentTypeHeaderValue)
+			writer.Header().Add(contentTypeHeaderKey, contentTypeHeaderValue)
 			writer.Write(responseBodyBytes)
 		}))
 		defer ts.Close()
 
-		client, err := NewWithOptions(ts.URL, testKey, testPassphrase, testSecret)
-		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewWithOptions", err)
+		client, err := NewClientWithOptions(ts.URL, testKey, testPassphrase, testSecret)
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewClientWithOptions", err)
 
 		res, err := client.executeRequest("GET", "/test", nil, nil, 0)
 		assert.DeepEqual(t, res, nil)

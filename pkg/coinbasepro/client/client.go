@@ -15,24 +15,24 @@ func createTimestamp() string {
 	return strconv.FormatInt(time.Now().Unix(), 10)
 }
 
-const CoinbaseProBaseurlKey = "COINBASE_PRO_BASEURL"
-const CoinbaseProKeyKey = "COINBASE_PRO_KEY"
-const CoinbaseProPassphraseKey = "COINBASE_PRO_PASSPHRASE"
-const CoinbaseProSecretKey = "COINBASE_PRO_SECRET"
+const coinbaseProBaseurlKey = "COINBASE_PRO_BASEURL"
+const coinbaseProKeyKey = "COINBASE_PRO_KEY"
+const coinbaseProPassphraseKey = "COINBASE_PRO_PASSPHRASE"
+const coinbaseProSecretKey = "COINBASE_PRO_SECRET"
 
-const CoinbaseProAccessKeyHeader = "CB-ACCESS-KEY"
-const CoinbaseProAccessSignatureHeader = "CB-ACCESS-SIGN"
-const CoinbaseProAccessTimestampHeader = "CB-ACCESS-TIMESTAMP"
-const CoinbaseProAccessPassphraseHeader = "CB-ACCESS-PASSPHRASE"
+const coinbaseProAccessKeyHeader = "CB-ACCESS-KEY"
+const coinbaseProAccessSignatureHeader = "CB-ACCESS-SIGN"
+const coinbaseProAccessTimestampHeader = "CB-ACCESS-TIMESTAMP"
+const coinbaseProAccessPassphraseHeader = "CB-ACCESS-PASSPHRASE"
 
-const AcceptHeaderKey = "Accept"
-const AcceptHeaderValue = "application/json"
-const ContentTypeHeaderKey = "Content-Type"
-const ContentTypeHeaderValue = "Content-Type"
+const acceptHeaderKey = "Accept"
+const acceptHeaderValue = "application/json"
+const contentTypeHeaderKey = "Content-Type"
+const contentTypeHeaderValue = "Content-Type"
 
 const UnsupportedHttpMethodErrorMessage = "supplied an unsupported or invalid http method"
 
-const WaitTimeOn429 = 300 * time.Millisecond
+const waitTimeOn429 = 300 * time.Millisecond
 
 var allowedHttpMethods = map[string]bool{ "GET":true, "POST":true, "DELETE":true }
 
@@ -44,11 +44,11 @@ type Client struct {
 	httpClient *http.Client
 }
 
-func New() (*Client, error) {
-	baseUrl := os.Getenv(CoinbaseProBaseurlKey)
-	key := os.Getenv(CoinbaseProKeyKey)
-	passphrase := os.Getenv(CoinbaseProPassphraseKey)
-	secret := os.Getenv(CoinbaseProSecretKey)
+func NewClient() (*Client, error) {
+	baseUrl := os.Getenv(coinbaseProBaseurlKey)
+	key := os.Getenv(coinbaseProKeyKey)
+	passphrase := os.Getenv(coinbaseProPassphraseKey)
+	secret := os.Getenv(coinbaseProSecretKey)
 
 	if baseUrl == "" {
 		return nil, errors.New("missing COINBASE_PRO_BASEURL")
@@ -66,10 +66,10 @@ func New() (*Client, error) {
 		return nil, errors.New("missing COINBASE_PRO_SECRET")
 	}
 
-	return NewWithOptions(baseUrl, key, passphrase, secret)
+	return NewClientWithOptions(baseUrl, key, passphrase, secret)
 }
 
-func NewWithOptions(baseUrl, key, passphrase, secret string) (*Client, error) {
+func NewClientWithOptions(baseUrl, key, passphrase, secret string) (*Client, error) {
 	client := Client{
 		baseUrl: baseUrl,
 		key: key,
@@ -117,13 +117,13 @@ func (t *Client) buildRequest(httpMethod, requestPath string, requestData interf
 		return &http.Request{}, err
 	}
 
-	req.Header.Add(CoinbaseProAccessKeyHeader, t.key)
-	req.Header.Add(CoinbaseProAccessPassphraseHeader, t.passphrase)
-	req.Header.Add(CoinbaseProAccessTimestampHeader, timestamp)
-	req.Header.Add(CoinbaseProAccessSignatureHeader, signature)
+	req.Header.Add(coinbaseProAccessKeyHeader, t.key)
+	req.Header.Add(coinbaseProAccessPassphraseHeader, t.passphrase)
+	req.Header.Add(coinbaseProAccessTimestampHeader, timestamp)
+	req.Header.Add(coinbaseProAccessSignatureHeader, signature)
 
-	req.Header.Add(ContentTypeHeaderKey, ContentTypeHeaderValue)
-	req.Header.Add(AcceptHeaderKey, AcceptHeaderValue)
+	req.Header.Add(contentTypeHeaderKey, contentTypeHeaderValue)
+	req.Header.Add(acceptHeaderKey, acceptHeaderValue)
 
 	return req, nil
 }
@@ -140,7 +140,7 @@ func (t *Client) sendRequest(req *http.Request, maxRetriesOn429 int) (res *http.
 		}
 
 		if res.StatusCode == http.StatusTooManyRequests {
-			time.Sleep(WaitTimeOn429)
+			time.Sleep(waitTimeOn429)
 			continue
 		}
 
