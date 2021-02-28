@@ -149,3 +149,30 @@ func (t *Client) makeRequest(req *http.Request, maxRetriesOn429 int) (res *http.
 
 	return res, err
 }
+
+func (t *Client) parseJsonResponse(res *http.Response, result interface{}) (interface{}, error) {
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		apiError := ApiError{
+			StatusCode: res.StatusCode,
+		}
+		decoder := json.NewDecoder(res.Body)
+		if err := decoder.Decode(&apiError); err != nil {
+			return nil, err
+		}
+
+		return nil, apiError
+	}
+
+	if res.ContentLength == 0 {
+		return nil, nil
+	}
+
+	decoder := json.NewDecoder(res.Body)
+	if err := decoder.Decode(result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}

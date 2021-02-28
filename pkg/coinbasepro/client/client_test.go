@@ -1,10 +1,12 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"gotest.tools/v3/assert"
 	is "gotest.tools/v3/assert/cmp"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -239,4 +241,68 @@ func TestMakeRequest(t *testing.T) {
 
 		assert.Equal(t, requests, maxRetriesOn429)
 	})
+}
+
+func TestParseResponse(t *testing.T) {
+	resetEnvVars()
+
+	t.Run("should return nil, nil when no body in Ok http response", func(t *testing.T) {
+		client, err := New()
+		assert.Assert(t, is.Nil(err), "unexpected creating client using New", err)
+
+		res := http.Response{
+			StatusCode: http.StatusOK,
+			Body: ioutil.NopCloser(bytes.NewReader(make([]byte, 0))),
+		}
+
+		obj, err := client.parseJsonResponse(&res, nil)
+		assert.Assert(t, is.Nil(err), "unexpected error from client.parseJsonResponse", err)
+
+		assert.Assert(t, is.Nil(obj), "parsed body not nil when expected to be")
+	})
+
+	t.Run("should return parsed response body from Ok http response", func(t *testing.T) {
+		client, err := New()
+		assert.Assert(t, is.Nil(err), "unexpected creating client using New", err)
+
+		type testResult struct {
+			Foo string `json:"foo"`
+		}
+
+		body := "{\"foo\":\"bar\"}"
+		res := http.Response{
+			StatusCode: http.StatusOK,
+			Body: ioutil.NopCloser(bytes.NewBufferString(body)),
+			ContentLength: int64(len(body)),
+		}
+
+		result := testResult{}
+		obj, err := client.parseJsonResponse(&res, &result)
+		assert.Assert(t, is.Nil(err), "unexpected error from client.parseJsonResponse", err)
+
+		expected := &testResult{Foo: "bar"}
+		assert.DeepEqual(t, obj, expected)
+	})
+
+	for _, httpStatus := range []int {http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound, http.StatusInternalServerError} {
+		testCase := fmt.Sprintf("should return error with decoded message for %v http response", httpStatus)
+		t.Run(testCase, func(t *testing.T) {
+			apiErrorMessage := "i am an error message"
+
+			client, err := New()
+			assert.Assert(t, is.Nil(err), "unexpected creating client using New", err)
+
+			body := fmt.Sprintf("{\"message\":\"%s\"}", apiErrorMessage)
+			res := http.Response{
+				StatusCode: httpStatus,
+				Body: ioutil.NopCloser(bytes.NewBufferString(body)),
+				ContentLength: int64(len(body)),
+			}
+
+			result, err := client.parseJsonResponse(&res, nil)
+
+			assert.Assert(t, is.Nil(result), "expected nil result", result)
+			assert.Error(t, err, fmt.Sprintf("%d - %s", httpStatus, apiErrorMessage))
+		})
+	}
 }
