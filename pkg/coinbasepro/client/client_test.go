@@ -123,7 +123,7 @@ func TestBuildRequest(t *testing.T) {
 
 	t.Run("should create expected request body", func(t *testing.T) {
 		client, err := New()
-		assert.Assert(t, is.Nil(err), "unexpected creating client using New", err)
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using New", err)
 
 		req, err := client.buildRequest("GET", "/test", nil)
 		assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
@@ -154,7 +154,7 @@ func TestBuildRequest(t *testing.T) {
 		expectedUrl := "https://testbaseurl.com/test"
 
 		client, err := New()
-		assert.Assert(t, is.Nil(err), "unexpected creating client using New", err)
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using New", err)
 
 		req, err := client.buildRequest("GET", "/test", nil)
 		assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
@@ -168,7 +168,7 @@ func TestBuildRequest(t *testing.T) {
 		expectedPassphraseHeader := clientOptionsMap[CoinbaseProPassphraseKey]
 
 		client, err := New()
-		assert.Assert(t, is.Nil(err), "unexpected creating client using New", err)
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using New", err)
 
 		req, err := client.buildRequest("GET", "/test", nil)
 		assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
@@ -185,7 +185,7 @@ func TestBuildRequest(t *testing.T) {
 
 	t.Run("should build request with correct accept and content type headers", func(t *testing.T) {
 		client, err := New()
-		assert.Assert(t, is.Nil(err), "unexpected creating client using New", err)
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using New", err)
 
 		req, err := client.buildRequest("GET", "/test", nil)
 		assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
@@ -209,7 +209,7 @@ func TestMakeRequest(t *testing.T) {
 			defer ts.Close()
 
 			client, err := NewWithOptions(ts.URL, testKey, testPassphrase, testSecret)
-			assert.Assert(t, is.Nil(err), "unexpected creating client using NewWithOptions", err)
+			assert.Assert(t, is.Nil(err), "unexpected error creating client using NewWithOptions", err)
 
 			req, err := client.buildRequest("GET", "/test", nil)
 			assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
@@ -231,7 +231,7 @@ func TestMakeRequest(t *testing.T) {
 		defer ts.Close()
 
 		client, err := NewWithOptions(ts.URL, testKey, testPassphrase, testSecret)
-		assert.Assert(t, is.Nil(err), "unexpected creating client using NewWithOptions", err)
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using NewWithOptions", err)
 
 		req, err := client.buildRequest("GET", "/test", nil)
 		assert.Assert(t, is.Nil(err), "unexpected error from client.buildRequest", err)
@@ -248,7 +248,7 @@ func TestParseResponse(t *testing.T) {
 
 	t.Run("should return nil, nil when no body in Ok http response", func(t *testing.T) {
 		client, err := New()
-		assert.Assert(t, is.Nil(err), "unexpected creating client using New", err)
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using New", err)
 
 		res := http.Response{
 			StatusCode: http.StatusOK,
@@ -263,7 +263,7 @@ func TestParseResponse(t *testing.T) {
 
 	t.Run("should return parsed response body from Ok http response", func(t *testing.T) {
 		client, err := New()
-		assert.Assert(t, is.Nil(err), "unexpected creating client using New", err)
+		assert.Assert(t, is.Nil(err), "unexpected error creating client using New", err)
 
 		type testResult struct {
 			Foo string `json:"foo"`
@@ -290,7 +290,7 @@ func TestParseResponse(t *testing.T) {
 			apiErrorMessage := "i am an error message"
 
 			client, err := New()
-			assert.Assert(t, is.Nil(err), "unexpected creating client using New", err)
+			assert.Assert(t, is.Nil(err), "unexpected error creating client using New", err)
 
 			body := fmt.Sprintf("{\"message\":\"%s\"}", apiErrorMessage)
 			res := http.Response{
